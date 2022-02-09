@@ -1,0 +1,107 @@
+--> To update repositories and upgrade all packages
+
+# apt-get update
+# apt-get upgrade -y
+
+--> Install pkgs requirements by nagios
+
+# apt-get install -y autoconf bc gawk dc build-essential gcc libc6 make wget unzip apache2 php libapache2-mod-php libgd-dev libmcrypt-dev make libssl-dev snmp libnet-snmp-perl gettext
+
+--> Download and extract nagios
+
+# mkdir nagios --> create folder
+# cd nagios/
+
+--> Download nagios from official website
+
+# wget https://assets.nagios.com/downloads/nagioscore/releases/nagios-4.4.6.tar.gz
+
+--> Extract nagios pkgs
+
+# tar -xvf nagios-4.4.6.tar.gz
+# cd nagios-4.4.6/ --> Go to nagios dir
+
+--> Compile and install plugins
+
+# ./configure --with-httpd-conf=/etc/apache2/sites-enabled --> define the Apache virtual host config for nagios
+# make all
+
+--> Create the nagios user and groups, and add www-data apache user to the nagios groups
+
+# make install-groups-users
+# usermod -a -G nagios www-data
+
+--> compile & install nagios, install nagios binaries,service daemon script, and the command mode
+
+# make install
+
+# make install-init --> install ini script in lib/systemd/systemctl
+# make install-commandmode --> install & configure permission on dir file holding the external command file
+# make install-config --> Install & sample configure in /usr/local/nagios/etc
+# make install-webconf  --> install apache config for nagios & activate the mod-rewrite & mod-cgimodules
+
+#a2enmod rewrite cgi
+#htpasswd -c /usr/local/nagios/etc/htpasswd.users nagiosadmin.
+
+#cd ..
+
+--> install & config nagios plugin & nrpe plugin
+
+# apt-get install monitoring-plugins nagios-nrpe-plugin -y
+# cd /usr/local/nagios/etc/ --> go to dir
+# ll
+
+# vim nagios.cfg --> configure file to define the server hosts configuration
+  ---> uncomment lines (51,52,53,54) to define dir for storing all server host config
+     ----> remove (#)
+
+ #mkdir servers printers switches routers  --> create folders for storing all server host configuration
+   :setnum
+
+# vim resource.cfg
+    --> go to line 25, uncomment it , and add new content
+    --> To put 25 line include (#)
+  $USER1$=/usr/lib/nagios/plugins ---> To add this content in line 26
+
+# cd objects/ --> go to dir
+# ll
+# vim contacts.cfg --> define the nagios admin to rename your email
+
+# vim command.cfg --> To define the nrpe check command
+  :$ --> Enter
+      --> Add new content to the end of file
+      define command {
+              command_name check-nrpe
+              command_line $USER1$/check_nrpe -H $HOSTADDRESS$ -c $ARG1$
+       }
+
+ # cd 
+
+--> ignore this if Ufw firewall not running on your systemctl
+--> configure firewall
+
+# ufw status ---> check ufw status
+# ufw allow apache 
+# ufw status 
+# ufw reload
+
+---> Restart Apache & nagios
+
+# systemctl restart apche2
+# systemctl restart nagios
+
+---> Enable Apache & nagios service to autostart boottime
+
+# systemctl enable apache2
+# systemctl enable nagios
+
+---> check server is up running or not
+
+# systemctl status apache2
+# systemctl status nagios
+
+# ifconfig --> nagios server via webinterface
+
+---> finish
+---> To check ip address on webbrowser https://ipaddress/nagios
+
