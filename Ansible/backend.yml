@@ -1,0 +1,62 @@
+---
+- hosts: backend
+  become: yes
+  tasks:
+  - name: Install python package for chatapp
+    apt: name=python3-pip state=present
+  - name: Install virtualenv package
+    pip:
+      name: virtualenv
+  - name: Clone a github repository
+    git:
+     repo: https://github.com/Pavangit-hub/new_chatapp.git
+     dest: new_chatapp
+     clone: yes
+  - name: Install python requirements in indicated (virtualenv)
+    pip:
+     requirements: /root/new_chatapp/requirements.txt
+     virtualenv: /root/new_chatapp/venv
+  - name: install package for chat app
+    apt: name=default-libmysqlclient-dev state=present
+  - name: install package for chatapp
+    apt: name=libssl-dev state=present
+  - name: install mysqlclient
+    pip:
+     name: mysqlclient
+     virtualenv: /root/new_chatapp/venv
+  - name: install psycopg2-binary
+    pip:
+     name: psycopg2-binary
+     virtualenv: /root/new_chatapp/venv
+  - name: Run migrate-command
+    django_manage:
+     command: migrate
+     app_path: /root/new_chatapp/fundoo
+     pythonpath: /root/new_chatapp/fundoo/fundoo
+     virtualenv: /root/new_chatapp/venv
+  - name: Copying gunicorn configurations to chatapp
+    copy:
+     src: config
+     dest: /etc/systemd/system/gunicorn.service
+  - name: restart gunicorn service
+    systemd:
+     name: gunicorn
+     daemon_reload: yes
+     state: started
+     enabled: yes
+  - name: uninstall PyJWT
+    pip:
+     name: PyJWT==1.7.1
+     state: absent
+     virtualenv: /root/new_chatapp/venv
+  - name: install PyJWT
+     pip:
+     name: PyJWT==1.7.1
+     state: present
+     virtualenv: /root/new_chatapp/venv
+  - name: restart gunicorn service
+    systemd:
+     name: gunicorn
+     state: restarted
+
+
