@@ -1,0 +1,23 @@
+---
+- hosts: frontend
+  become: yes
+  tasks:
+   - name: install nginx package
+     apt: name=nginx state=present
+   - name: copy nginx configuration file
+     copy:
+      src: nginxconfig
+      dest: /etc/nginx/sites-available/fundoo
+   - name: restart nginx
+     service:
+      name: nginx
+      state: started
+   - name: for enabling nginx sites enabled
+     file:
+      src: /etc/nginx/sites-available/fundoo
+      dest: /etc/nginx/sites-enabled/default
+      state: link
+   - name: restart nginx
+     service:
+      name: nginx
+      state: restarted
