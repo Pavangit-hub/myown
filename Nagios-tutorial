@@ -1,0 +1,140 @@
+#### Nagios ######
+* Nagios is an open source tool for __System Monitoring__
+* Main purposed of system monitoring is to detect if any system is not working as intended and
+notify the apropriate staff to resolve the error as early as possible.
+* System monitoring in Nagios is split into two major categories of objects
+    * Hosts:
+           represent a physical or virtual device on your network
+           Eg: appserver1.lt.com, nswitch1, 192.168.0.11
+    * Services:
+           are particular functionalities on hosts
+           Eg: SSH, tomcat, SQL Server etc
+* Hosts can be grouped as host groups.
+* Nagios checks will result in 4 distinct states
+    * OK
+    * Warning
+    * Critical
+    * Unknown
+* Nagios performs all of its checks using plugins.
+* Plugins are external components which Nagios passes information on what should be checked and what limits
+* Plugins are responsible for performing the checks and anlalysing the results. The output form checks of Nagions is status (OK, Warning, Critical, Unknown)  
+* Nagios comes with set of Standard plugins.
+* If you need to perform a specific check, it is easy to write your own plugins in any language.
+* Nagios is based on clear object definition system. So lets see the different types of objects
+    * [Commands]: definitions of how nagios should perform types of checks
+                They are abstraction layer on top of actual plugins that perform the checks.
+    * [Time_periods]: Date and time spans during which operations should/shouldn’t be perfomed
+    * Host and host groups
+    * [Services]: various functionalities or resources to monitor on specific host. eg: CPU usage, free disk space,            webserver,dbserver, ftp
+    * [Contact_and_contact_groups]: People or group of people that should be notified.
+    * [Notifications]: These define who should be notified of what.
+    * [Escalations]: Extensions to notifications. For eg: a critical server being down for more that 4 hours should alert IT  management, so that they can track the issue.
+* Nagios has a beneficial feature that is mature dependency system
+    * Consider this below network
+    * Now lets assume the following router goes down, then generally it would endup showing dbserver is down, webserver is down, switch2 is down and router2 is down
+    * In nagios we can define that a particular service is dependent on other server and if the other service fails, dont check the dependent services
+    * Nagios offers a consistent system of macro definitions. These are variables that can be put into all object definitions
+* Soft and hard states:
+    * Nagios works by checking if a particular service or host is working correctly by storing status. In order to avoid detecting random or temporary failures, Nagios uses soft and hard states
+    * In the below infra, lets assume you want to restart webserver
+    * Restarting web server makes web pages inaccesible for 10 seconds.
+    * when the previous status of check is unknow or different from the new state, Nagios will assume soft state is new    result and it will try to redo the check to ensure that the new result state is permanent. This permanent state is hard state.
+
+###### _Nagios Installation_
+
+* Nagios is offered as
+    * Nagios Core (Free)
+    * Nagios Enterprise (Paid)
+* For Nagios Core installation __Official Docs__ (https://assets.nagios.com/downloads/nagioscore/docs/nagioscore/4/en/quickstart.html) and __Direct DevOps__ (https://directdevops.blog/2020/03/15/installing-nagios/). 
+* If we follow the standard installation as mentioned in above links the following folder structure and files are very essential
+* Configuring Nagios
+    * Main nagios configuration file is nagios.cfg, when we start nagios this is the file that gets loaded.
+    * __Refer Here__ (https://assets.nagios.com/downloads/nagioscore/docs/nagioscore/4/en/configmain.html) for official docs.
+* Configuration Options
+    * log_file: Specifies the logfile to use
+    * cfg_file: Specifies the configuration file to read for object definitions.
+    * cfg_dir: Specifies the configuration directory where all the files in it should be read for object definitions
+    * resource_file: File that stores macro definitions
+    * temp_file: Path to a temporary file to store temporary data
+    * lock_file: Path to a file used for synchronization
+    * status_file: Path to a file that stores the current status of all hosts and services.
+    * status_update_interval: Specifies how often in seconds the status file should be updated
+    * nagios_user: user to run the nagios daemon
+    * nagios_group: Group to run the nagios daemon
+    * command_file: It specifies path to external commandline that is used by other process to control the Nagios daemon
+    * service_check_timeout: After how many seconds should service check can be assumed to failed. default is 60 seconds
+    * host_check_timeout: After how many seconds should host check can be assumed to failed. default is 30 seconds
+    * interval_length: specifies the number of seconds for unit interval. It is not recommended to change this option.  
+* Nagios tries to read configuration from the file ("/usr/local/nagios/etc/nagios.cfg").
+* In this file look into all the enabled lines for cfg_file
+* So if we need to monitor other instances, we need to write the object configurations which are referred as object definitions
+* Object Configuration & Object Definitions
+  * What are Objects
+   ---> Objects are elements involved in monitoring & notifications.
+  * Types of objects
+     * Services
+     * Service Groups
+     * Hosts
+     * Host Groups
+     * Contacts
+     * Contact Groups
+     * Commands
+     * Timeperiods
+     * Notification & Execution Dependencies
+     * Escalations
+* Where are these objects defined?
+    * Objects can be defined in file or a directory having multiple files (.cfg) defined in main nagios configuration file   (/usr/local/nagios/etc/nagios.cfg) under section cfg_file or cfg_dir.
+* How do i define then?
+    * Nagios objects can be defined in a template format. Basic information about them is __over here__ (https://assets.nagios.com/downloads/nagioscore/docs/nagioscore/3/en/objectdefinitions.html) as object Definitions.
+
+### Create one linux machine and add it to your monitoring using nagios ###
+---> Create a linux vm (Using aws)
+---> Since we have a new host now, lets add host definition __Refer Here__ (https://directdevops.blog/2020/07/10/devops-classroom-series-10-jul-2020/)
+----> Create a new webserver.cfg file
+define host {
+    host_name                   webserver
+    address                     172.31.5.24
+    max_check_attempts          3
+    check_period                24x7
+    contacts                    generic-contact
+    notification_interval       60
+    notification_period         24x7
+    
+}
+* Lets enable webserver.cfg in main nagios configuration.
+* Nagios will not show new objects till we restart nagios. There is one catch here, if there is any mistake in object definition and if you to restart nagios, nagios will not start.
+* There is a way to verify your nagios configuration, which is referred as pre-flight check.
+''''
+###    /usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
+''''
+* Now this error has to be resolved, but for the time being i would use the syntax adopted by localhost.cfg.
+define host {
+
+    use                     linux-server            
+    host_name               webserver
+    alias                   webserver
+    address                 172.31.5.24
+}
+* Now lets rerun preflight check
+''''
+####    /usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
+'''''
+* Since preflight checks have passed, lets restart nagios
+## sudo systemctl restart nagios.service
+* So service is the check which we want to perform, so lets copy one simple service from localhost.cfg into webserver.cfg. Add this to your webserver.cfg
+
+define service {
+
+    use                     local-service           ; Name of service template to use
+    host_name               webserver
+    service_description     PING
+    check_command           check_ping!100.0,20%!500.0,60%
+}
+
+* Run preflight check and if it successful restart nagios and navigate to web page
+* So our next steps would creating object definitions from scratch, understanding inheritance.
+Share this:
+
+
+
+
