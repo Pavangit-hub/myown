@@ -52,7 +52,8 @@ nano settings.py ---------------update database credential
       User=ubuntu
       Group=www-data
       WorkingDirectory=/home/ubuntu/new_chatapp/fundoo
-      ExecStart=/home/ubuntu/new_chatapp/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:8000 fundoo.wsgi:application
+      ExecStart=/bin/bash -c 'source /home/ubuntu/new_chatapp/venv/bin/activate && gunicorn --bind 0.0.0.0:8000 fundoo.wsgi:application'
+[Install]
      [Install]
      WantedBy=multi-user.target
 
